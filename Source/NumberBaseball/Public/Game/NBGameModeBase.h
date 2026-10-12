@@ -13,5 +13,7 @@ UCLASS()
 class NUMBERBASEBALL_API ANBGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	virtual void OnPostLogin(AController* NewPlayer) override;
 };
