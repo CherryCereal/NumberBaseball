@@ -5,10 +5,16 @@
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Game/NBGameModeBase.h"
+#include "Player/NBPlayerState.h"
 
 void ANBPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (IsLocalController() == false)
+	{
+		return;
+	}
 
 	FInputModeUIOnly InputModeUIOnly;
 	SetInputMode(InputModeUIOnly);
@@ -28,10 +34,15 @@ void ANBPlayerController::SetChatMessageString(const FString& InChatMessageStrin
 {
 	ChatMessageString = InChatMessageString;
 
-	//PrintChatMessageString(InChatMessageString);
 	if (IsLocalController() == true)
 	{
-		ServerRPCPrintChatMessageString(InChatMessageString);
+		ANBPlayerState* NBPS = GetPlayerState<ANBPlayerState>();
+		if (IsValid(NBPS) == true)
+		{
+			FString CombinedMessageString = NBPS->GetPlayerInfoString() + TEXT(": ") + InChatMessageString;
+
+			ServerRPCPrintChatMessageString(CombinedMessageString);
+		}
 	}
 }
 
