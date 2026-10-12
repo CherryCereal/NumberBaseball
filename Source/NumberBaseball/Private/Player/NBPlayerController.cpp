@@ -3,6 +3,8 @@
 #include "UI/NBChatInput.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
+#include "Game/NBGameModeBase.h"
 
 void ANBPlayerController::BeginPlay()
 {
@@ -45,12 +47,13 @@ void ANBPlayerController::ClientRPCPrintChatMessageString_Implementation(const F
 
 void ANBPlayerController::ServerRPCPrintChatMessageString_Implementation(const FString& InChatMessageString)
 {
-	for (TActorIterator<ANBPlayerController> It(GetWorld()); It; ++It)
+	AGameModeBase* GM = UGameplayStatics::GetGameMode(this);
+	if (IsValid(GM) == true)
 	{
-		ANBPlayerController* NBPlayerController = *It;
-		if (IsValid(NBPlayerController) == true)
+		ANBGameModeBase* NBGM = Cast<ANBGameModeBase>(GM);
+		if (IsValid(NBGM) == true)
 		{
-			NBPlayerController->ClientRPCPrintChatMessageString(InChatMessageString);
+			NBGM->PrintChatMessageString(this, InChatMessageString);
 		}
 	}
 }
