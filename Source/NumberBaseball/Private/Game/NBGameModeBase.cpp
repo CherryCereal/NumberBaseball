@@ -131,11 +131,14 @@ void ANBGameModeBase::BeginPlay()
 
 void ANBGameModeBase::PrintChatMessageString(ANBPlayerController* InChattingPlayerController, const FString& InChatMessageString)
 {
-	int Index = InChatMessageString.Len() - 3;
-	FString GuessNumberString = InChatMessageString.RightChop(Index);
+	const FString& GuessNumberString = InChatMessageString;
 	if (IsGuessNumberString(GuessNumberString) == true)
 	{
 		FString JudgeResultString = JudgeResult(SecretNumberString, GuessNumberString);
+		ANBPlayerState* NBPS = InChattingPlayerController->GetPlayerState<ANBPlayerState>();
+		const FString PlayerInfoString = IsValid(NBPS)
+			? NBPS->GetPlayerInfoString()
+			: TEXT("Player");
 
 		IncreaseGuessCount(InChattingPlayerController);
 
@@ -144,7 +147,7 @@ void ANBGameModeBase::PrintChatMessageString(ANBPlayerController* InChattingPlay
 			ANBPlayerController* NBPlayerController = *It;
 			if (IsValid(NBPlayerController) == true)
 			{
-				FString CombinedMessageString = InChatMessageString + TEXT(" -> ") + JudgeResultString;
+				FString CombinedMessageString = PlayerInfoString + TEXT(": ") + GuessNumberString + TEXT(" -> ") + JudgeResultString;
 				NBPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
 			}
 		}
@@ -154,14 +157,7 @@ void ANBGameModeBase::PrintChatMessageString(ANBPlayerController* InChattingPlay
 	}
 	else
 	{
-		for (TActorIterator<ANBPlayerController> It(GetWorld()); It; ++It)
-		{
-			ANBPlayerController* NBPlayerController = *It;
-			if (IsValid(NBPlayerController) == true)
-			{
-				NBPlayerController->ClientRPCPrintChatMessageString(InChatMessageString);
-			}
-		}
+		InChattingPlayerController->ClientRPCPrintChatMessageString(TEXT("다시 입력하세요"));
 	}
 }
 
