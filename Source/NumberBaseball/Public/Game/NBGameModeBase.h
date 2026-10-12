@@ -33,8 +33,19 @@ public:
 	void ResetGame();
 
 	void JudgeGame(ANBPlayerController* InChattingPlayerController, int InStrikeCount);
+
+	bool HaveAllPlayersUsedGuesses() const;
+
+	void EndGame(const FText& InResultText);
 protected:
 	FString SecretNumberString;
 
 	TArray<TObjectPtr<ANBPlayerController>> AllPlayerControllers;
+
+	FTimerHandle RestartTimerHandle;
+
+	bool bGameEnding = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Number Baseball")
+	float ResultDisplayDuration = 3.0f;
 };

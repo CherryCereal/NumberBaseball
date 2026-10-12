@@ -5,6 +5,7 @@
 #include "Player/NBPlayerController.h"
 #include "EngineUtils.h"
 #include "Player/NBPlayerState.h"
+#include "TimerManager.h"
 
 void ANBGameModeBase::OnPostLogin(AController* NewPlayer)
 {
@@ -127,10 +128,17 @@ void ANBGameModeBase::BeginPlay()
 	Super::BeginPlay();
 
 	SecretNumberString = GenerateSecretNumber();
+	UE_LOG(LogTemp, Error, TEXT("Secret Number: %s"), *SecretNumberString);
 }
 
 void ANBGameModeBase::PrintChatMessageString(ANBPlayerController* InChattingPlayerController, const FString& InChatMessageString)
 {
+	if (bGameEnding)
+	{
+		InChattingPlayerController->ClientRPCPrintChatMessageString(TEXT("게임 결과를 확인하는 중입니다."));
+		return;
+	}
+
 	const FString& GuessNumberString = InChatMessageString;
 	if (IsGuessNumberString(GuessNumberString) == true)
 	{
@@ -173,57 +181,87 @@ void ANBGameModeBase::IncreaseGuessCount(ANBPlayerController* InChattingPlayerCo
 void ANBGameModeBase::ResetGame()
 {
 	SecretNumberString = GenerateSecretNumber();
+	bGameEnding = false;
 
 	for (const auto& NBPlayerController : AllPlayerControllers)
 	{
+		if (IsValid(NBPlayerController) == false)
+		{
+			continue;
+		}
+
 		ANBPlayerState* NBPS = NBPlayerController->GetPlayerState<ANBPlayerState>();
 		if (IsValid(NBPS) == true)
 		{
 			NBPS->CurrentGuessCount = 0;
 		}
+
+		NBPlayerController->NotificationText = FText::FromString(TEXT("새 게임이 시작되었습니다."));
 	}
 }
 
 void ANBGameModeBase::JudgeGame(ANBPlayerController* InChattingPlayerController, int InStrikeCount)
 {
+	if (bGameEnding)
+	{
+		return;
+	}
+
 	if (3 == InStrikeCount)
 	{
 		ANBPlayerState* NBPS = InChattingPlayerController->GetPlayerState<ANBPlayerState>();
-		for (const auto& NBPlayerController : AllPlayerControllers)
+		if (IsValid(NBPS) == true)
 		{
-			if (IsValid(NBPS) == true)
-			{
-				FString CombinedMessageString = NBPS->PlayerNameString + TEXT(" has won the game.");
-				NBPlayerController->NotificationText = FText::FromString(CombinedMessageString);
-
-				ResetGame();
-			}
+			const FString ResultString = NBPS->PlayerNameString + TEXT(" 승리!");
+			EndGame(FText::FromString(ResultString));
 		}
+		return;
 	}
-	else
+
+	if (HaveAllPlayersUsedGuesses())
 	{
-		bool bIsDraw = true;
-		for (const auto& NBPlayerController : AllPlayerControllers)
+		EndGame(FText::FromString(TEXT("무승부!")));
+	}
+}
+
+bool ANBGameModeBase::HaveAllPlayersUsedGuesses() const
+{
+	bool bHasPlayer = false;
+
+	for (const auto& NBPlayerController : AllPlayerControllers)
+	{
+		if (IsValid(NBPlayerController) == false)
 		{
-			ANBPlayerState* NBPS = NBPlayerController->GetPlayerState<ANBPlayerState>();
-			if (IsValid(NBPS) == true)
-			{
-				if (NBPS->CurrentGuessCount < NBPS	->MaxGuessCount)
-				{
-					bIsDraw = false;
-					break;
-				}
-			}
+			continue;
 		}
 
-		if (true == bIsDraw)
+		ANBPlayerState* NBPS = NBPlayerController->GetPlayerState<ANBPlayerState>();
+		if (IsValid(NBPS) == false)
 		{
-			for (const auto& NBPlayerController : AllPlayerControllers)
-			{
-				NBPlayerController->NotificationText = FText::FromString(TEXT("Draw..."));
+			continue;
+		}
 
-				ResetGame();
-			}
+		bHasPlayer = true;
+		if (NBPS->CurrentGuessCount < NBPS->MaxGuessCount)
+		{
+			return false;
 		}
 	}
+
+	return bHasPlayer;
+}
+
+void ANBGameModeBase::EndGame(const FText& InResultText)
+{
+	bGameEnding = true;
+
+	for (const auto& NBPlayerController : AllPlayerControllers)
+	{
+		if (IsValid(NBPlayerController) == true)
+		{
+			NBPlayerController->NotificationText = InResultText;
+		}
+	}
+
+	GetWorldTimerManager().SetTimer(RestartTimerHandle, this, &ThisClass::ResetGame, ResultDisplayDuration, false);
 }
