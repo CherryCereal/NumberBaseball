@@ -6,6 +6,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Game/NBGameModeBase.h"
 #include "Player/NBPlayerState.h"
+#include "Net/UnrealNetwork.h"
+
+ANBPlayerController::ANBPlayerController()
+{
+	bReplicates = true;
+}
 
 void ANBPlayerController::BeginPlay()
 {
@@ -25,6 +31,15 @@ void ANBPlayerController::BeginPlay()
 		if (IsValid(ChatInputWidgetInstance) == true)
 		{
 			ChatInputWidgetInstance->AddToViewport();
+		}
+	}
+
+	if (IsValid(NotificationTextWidgetClass) == true)
+	{
+		NotificationTextWidgetInstance = CreateWidget<UUserWidget>(this, NotificationTextWidgetClass);
+		if (IsValid(NotificationTextWidgetInstance) == true)
+		{
+			NotificationTextWidgetInstance->AddToViewport();
 		}
 	}
 }
@@ -67,4 +82,11 @@ void ANBPlayerController::ServerRPCPrintChatMessageString_Implementation(const F
 			NBGM->PrintChatMessageString(this, InChatMessageString);
 		}
 	}
+}
+
+void ANBPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, NotificationText);
 }

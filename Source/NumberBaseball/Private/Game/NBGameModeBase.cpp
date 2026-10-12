@@ -13,6 +13,8 @@ void ANBGameModeBase::OnPostLogin(AController* NewPlayer)
 	ANBPlayerController* NBPlayerController = Cast<ANBPlayerController>(NewPlayer);
 	if (IsValid(NBPlayerController) == true)
 	{
+		NBPlayerController->NotificationText = FText::FromString(TEXT("Connected to the game server."));
+
 		AllPlayerControllers.Add(NBPlayerController);
 
 		ANBPlayerState* NBPS = NBPlayerController->GetPlayerState<ANBPlayerState>();
@@ -139,6 +141,9 @@ void ANBGameModeBase::PrintChatMessageString(ANBPlayerController* InChattingPlay
 			{
 				FString CombinedMessageString = InChatMessageString + TEXT(" -> ") + JudgeResultString;
 				NBPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
+
+				int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
+				JudgeGame(InChattingPlayerController, StrikeCount);
 			}
 		}
 	}
@@ -161,5 +166,63 @@ void ANBGameModeBase::IncreaseGuessCount(ANBPlayerController* InChattingPlayerCo
 	if (IsValid(NBPS) == true)
 	{
 		NBPS->CurrentGuessCount++;
+	}
+}
+
+void ANBGameModeBase::ResetGame()
+{
+	SecretNumberString = GenerateSecretNumber();
+
+	for (const auto& NBPlayerController : AllPlayerControllers)
+	{
+		ANBPlayerState* NBPS = NBPlayerController->GetPlayerState<ANBPlayerState>();
+		if (IsValid(NBPS) == true)
+		{
+			NBPS->CurrentGuessCount = 0;
+		}
+	}
+}
+
+void ANBGameModeBase::JudgeGame(ANBPlayerController* InChattingPlayerController, int InStrikeCount)
+{
+	if (3 == InStrikeCount)
+	{
+		ANBPlayerState* NBPS = InChattingPlayerController->GetPlayerState<ANBPlayerState>();
+		for (const auto& NBPlayerController : AllPlayerControllers)
+		{
+			if (IsValid(NBPS) == true)
+			{
+				FString CombinedMessageString = NBPS->PlayerNameString + TEXT(" has won the game.");
+				NBPlayerController->NotificationText = FText::FromString(CombinedMessageString);
+
+				ResetGame();
+			}
+		}
+	}
+	else
+	{
+		bool bIsDraw = true;
+		for (const auto& NBPlayerController : AllPlayerControllers)
+		{
+			ANBPlayerState* NBPS = NBPlayerController->GetPlayerState<ANBPlayerState>();
+			if (IsValid(NBPS) == true)
+			{
+				if (NBPS->CurrentGuessCount < NBPS	->MaxGuessCount)
+				{
+					bIsDraw = false;
+					break;
+				}
+			}
+		}
+
+		if (true == bIsDraw)
+		{
+			for (const auto& NBPlayerController : AllPlayerControllers)
+			{
+				NBPlayerController->NotificationText = FText::FromString(TEXT("Draw..."));
+
+				ResetGame();
+			}
+		}
 	}
 }
