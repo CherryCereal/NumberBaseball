@@ -82,6 +82,11 @@ bool ANBGameModeBase::IsGuessNumberString(const FString& InNumberString)
 			break;
 		}
 
+		if (UniqueDigits.Num() != 3)
+		{
+			break;
+		}
+
 		bCanPlay = true;
 
 	} while (false);
@@ -141,11 +146,11 @@ void ANBGameModeBase::PrintChatMessageString(ANBPlayerController* InChattingPlay
 			{
 				FString CombinedMessageString = InChatMessageString + TEXT(" -> ") + JudgeResultString;
 				NBPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
-
-				int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
-				JudgeGame(InChattingPlayerController, StrikeCount);
 			}
 		}
+
+		const int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
+		JudgeGame(InChattingPlayerController, StrikeCount);
 	}
 	else
 	{

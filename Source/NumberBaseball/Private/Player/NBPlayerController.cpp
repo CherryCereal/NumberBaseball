@@ -63,7 +63,7 @@ void ANBPlayerController::SetChatMessageString(const FString& InChatMessageStrin
 
 void ANBPlayerController::PrintChatMessageString(const FString& InChatMessageString)
 {
-	UKismetSystemLibrary::PrintString(this, ChatMessageString, true, true, FLinearColor::Red, 5.0f);
+	UKismetSystemLibrary::PrintString(this, InChatMessageString, true, true, FLinearColor::Red, 5.0f);
 }
 
 void ANBPlayerController::ClientRPCPrintChatMessageString_Implementation(const FString& InChatMessageString)
